@@ -1,0 +1,51 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.sehirsoforu.oyun'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.sehirsoforu.oyun'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // Play Store için kendi imza anahtarını burada tanımla (README'ye bak).
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// 3D motoru (Three.js) derleme sırasında indirip uygulamanın içine koyar.
+// Böylece oyun telefonda internet olmadan da açılır.
+def assetsDir = file('src/main/assets')
+tasks.register('motoruIndir') {
+    def dosyalar = [
+        'three.min.js'          : 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js',
+        'BufferGeometryUtils.js': 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js'
+    ]
+    outputs.files(dosyalar.keySet().collect { new File(assetsDir, it) })
+    doLast {
+        assetsDir.mkdirs()
+        dosyalar.each { ad, url ->
+            def hedef = new File(assetsDir, ad)
+            if (!hedef.exists() || hedef.length() == 0) {
+                println "İndiriliyor: $ad"
+                new URL(url).withInputStream { giris -> hedef.withOutputStream { it << giris } }
+            }
+        }
+    }
+}
+preBuild.dependsOn('motoruIndir')
